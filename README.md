@@ -50,3 +50,15 @@ Ce projet est un programme en C++ qui permet d'encoder et de décoder des fichie
 - Environnement : Visual Studio
 - Encodage : UTF-8
 - Dépendances standard : iostream, string, fstream
+
+## Version web (WebAssembly)
+
+Le dossier `web/` contient une version du programme qui s'exécute directement dans le navigateur :
+
+- `web/encodeur_web.cpp` reprend la logique d'encodage et de décodage de `main.cpp`. Au lieu de lire et d'écrire des fichiers sur le disque, il reçoit le texte et la clé depuis la page et renvoie le résultat.
+- `web/index.html` est la page : choix du mode, zone de texte ou fichier `.txt`, clé, téléchargement du résultat.
+- `web/build.sh` compile le C++ en WebAssembly avec [Emscripten](https://emscripten.org) dans `web/dist/`.
+
+À chaque push sur `main`, le workflow `.github/workflows/pages.yml` compile et publie la page sur GitHub Pages.
+
+Différence avec la version console : si la clé contient des majuscules, des chiffres ou des symboles, le décalage devient négatif. La version web ramène alors le résultat dans la plage 32-126. Sinon, il pouvait produire des caractères de contrôle, voire un faux retour à la ligne qui empêchait le décodage. Avec une clé en minuscules, le résultat est identique à celui de la version console.
