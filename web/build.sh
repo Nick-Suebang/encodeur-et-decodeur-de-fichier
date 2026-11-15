@@ -8,8 +8,9 @@ cd "$(dirname "$0")"
 mkdir -p dist
 cp index.html dist/index.html
 
-emcc encodeur_web.cpp \
-  -O2 -std=c++17 \
+emcc bindings.cpp ../src/chiffrement.cpp \
+  -I ../src \
+  -O2 -std=c++17 -Wall -Wextra \
   -lembind \
   -sMODULARIZE=1 \
   -sEXPORT_NAME=creerEncodeur \

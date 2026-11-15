@@ -22,6 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # On ne publie jamais une version dont les tests échouent.
+      - name: Tester le cœur
+        run: sh tests/run.sh
+
       - name: Installer Emscripten
         uses: mymindstorm/setup-emsdk@v16
         with:

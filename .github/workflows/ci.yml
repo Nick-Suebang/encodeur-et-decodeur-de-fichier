@@ -1,0 +1,41 @@
+# Vérifie chaque push et chaque pull request :
+# - tests du cœur + compilation de la console avec g++ (Linux) ;
+# - compilation de la solution Visual Studio avec MSVC (Windows) ;
+# - compilation de la version web avec Emscripten.
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests (g++)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: sh tests/run.sh
+
+  visual-studio:
+    name: Solution Visual Studio (MSVC)
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        platform: [x64, x86]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: microsoft/setup-msbuild@v3
+      - run: msbuild Encodeur-Decodeur.sln /p:Configuration=Release /p:Platform=${{ matrix.platform }} /m /warnaserror
+
+  web:
+    name: Version web (Emscripten)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: mymindstorm/setup-emsdk@v16
+        with:
+          version: 3.1.74
+      - run: sh web/build.sh
