@@ -2,6 +2,8 @@
 
 Ce projet est un programme en C++ qui permet d'encoder et de décoder des fichiers texte en utilisant une clé de chiffrement.
 
+**[Essayer en ligne](https://nick-suebang.github.io/encodeur-et-decodeur-de-fichier/)** : le programme C++, compilé en WebAssembly, s'exécute directement dans le navigateur.
+
 ## Fonctionnalités
 
 - Encodage de fichiers texte
@@ -52,6 +54,8 @@ Ce projet est un programme en C++ qui permet d'encoder et de décoder des fichie
 - Dépendances standard : iostream, string, fstream
 
 ## Version web (WebAssembly)
+
+Site en ligne : https://nick-suebang.github.io/encodeur-et-decodeur-de-fichier/
 
 Le dossier `web/` contient une version du programme qui s'exécute directement dans le navigateur :
 
