@@ -186,7 +186,8 @@
     masquerResultat();
     if (!verifierCle()) { cle.focus(); return; }
     // Appel des fonctions C++ encoder() / decoder()
-    const resultat = module[mode](entree.value, cle.value);
+    const operation = mode === "encoder" ? module.encoder : module.decoder;
+    const resultat = operation(entree.value, cle.value);
     if (!resultat.ok) {
       message.textContent = resultat.erreur;
       message.hidden = false;
@@ -205,6 +206,10 @@
       $("nom-fichier").textContent = "Fichier chargé : " + fichier.name;
       masquerResultat();
     };
+    lecteur.onerror = () => {
+      message.textContent = "Impossible de lire le fichier « " + fichier.name + " ».";
+      message.hidden = false;
+    };
     lecteur.readAsText(fichier);
   }
 
@@ -218,7 +223,12 @@
   lancer.addEventListener("click", executer);
   cle.addEventListener("input", () => { verifierCle(); masquerResultat(); });
   cle.addEventListener("keydown", (e) => { if (e.key === "Enter") executer(); });
-  entree.addEventListener("input", masquerResultat);
+  entree.addEventListener("input", () => {
+    // Le texte a été modifié à la main : il ne correspond plus au fichier chargé.
+    nomFichier = null;
+    $("nom-fichier").textContent = "";
+    masquerResultat();
+  });
 
   $("choisir-fichier").addEventListener("click", () => $("fichier").click());
   $("fichier").addEventListener("change", (e) => chargerFichier(e.target.files[0]));
