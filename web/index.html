@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Encodeur / Décodeur — C++ dans le navigateur</title>
+  <meta name="description" content="Un encodeur/décodeur de fichiers écrit en C++, compilé en WebAssembly et exécuté directement dans le navigateur.">
+  <style>
+    :root {
+      --bg: #f6f5f1;
+      --surface: #ffffff;
+      --text: #1d1d1b;
+      --muted: #6b6a63;
+      --border: #dddbd2;
+      --accent: #2f5bd3;
+      --accent-text: #ffffff;
+      --error-bg: #fdecea;
+      --error-text: #a12b1f;
+      --ok: #23794a;
+      --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #151614;
+        --surface: #1e1f1c;
+        --text: #ecebe6;
+        --muted: #9d9c94;
+        --border: #34352f;
+        --accent: #7c9cff;
+        --accent-text: #0d1430;
+        --error-bg: #3a1d19;
+        --error-text: #ffb4a9;
+        --ok: #6fd39b;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    main { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; }
+    h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
+    .intro { color: var(--muted); margin: 0 0 28px; }
+    .badge {
+      display: inline-block; font-size: .78rem; font-weight: 600;
+      padding: 2px 10px; border-radius: 999px; margin-bottom: 14px;
+      border: 1px solid var(--border); color: var(--muted);
+    }
+    .badge.pret { color: var(--ok); border-color: currentColor; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 22px;
+    }
+    .modes { display: flex; gap: 6px; padding: 4px; background: var(--bg); border-radius: 10px; margin-bottom: 20px; }
+    .modes button {
+      flex: 1; border: 0; background: transparent; color: var(--muted);
+      font: inherit; font-weight: 600; padding: 9px; border-radius: 7px; cursor: pointer;
+    }
+    .modes button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / .12); }
+    label { display: block; font-weight: 600; font-size: .92rem; margin: 0 0 6px; }
+    .ligne { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .lien-fichier { font-size: .88rem; color: var(--accent); cursor: pointer; text-decoration: underline; background: none; border: 0; padding: 0; font-family: inherit; }
+    textarea, input[type="text"] {
+      width: 100%; font: 14px/1.5 var(--mono); color: var(--text);
+      background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px;
+    }
+    textarea { min-height: 140px; resize: vertical; }
+    textarea:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .champ { margin-bottom: 18px; }
+    .aide { font-size: .84rem; color: var(--muted); margin-top: 5px; }
+    .aide.erreur { color: var(--error-text); }
+    .depot.survol textarea { outline: 2px dashed var(--accent); }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      font: inherit; font-weight: 600; border-radius: 9px; padding: 10px 18px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    .btn.principal { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .message { margin-top: 16px; padding: 10px 12px; border-radius: 9px; background: var(--error-bg); color: var(--error-text); font-size: .92rem; }
+    #zone-resultat { margin-top: 24px; }
+    #zone-resultat textarea { background: var(--bg); }
+    #zone-resultat .actions { margin-top: 10px; }
+    .explication { margin-top: 36px; color: var(--muted); font-size: .93rem; }
+    .explication h2 { color: var(--text); font-size: 1.05rem; margin: 0 0 6px; }
+    .explication p { margin: 0 0 10px; }
+    a { color: var(--accent); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<main>
+  <span class="badge" id="etat">Chargement du module C++…</span>
+  <h1>Encodeur / Décodeur de fichiers</h1>
+  <p class="intro">Un programme en C++ qui chiffre un texte avec une clé. Il est compilé en WebAssembly et s'exécute directement dans votre navigateur : rien n'est envoyé sur un serveur.</p>
+
+  <div class="card">
+    <div class="modes" role="group" aria-label="Mode">
+      <button type="button" data-mode="encoder" aria-pressed="true">Encoder</button>
+      <button type="button" data-mode="decoder" aria-pressed="false">Décoder</button>
+    </div>
+
+    <div class="champ depot" id="depot">
+      <div class="ligne">
+        <label for="entree" id="libelle-entree">Texte à encoder</label>
+        <button type="button" class="lien-fichier" id="choisir-fichier">ou ouvrir un fichier .txt</button>
+      </div>
+      <textarea id="entree" spellcheck="false" placeholder="Tapez ou collez votre texte ici, ou glissez-déposez un fichier .txt">Bonjour ! Ceci est un message secret.</textarea>
+      <input type="file" id="fichier" accept=".txt,text/plain" hidden>
+      <div class="aide" id="nom-fichier"></div>
+    </div>
+
+    <div class="champ">
+      <label for="cle">Clé</label>
+      <input type="text" id="cle" value="portfolio" autocomplete="off" spellcheck="false" maxlength="40">
+      <div class="aide" id="aide-cle">Entre 5 et 20 caractères anglais, sans espace.</div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn principal" id="lancer" disabled>Encoder</button>
+    </div>
+
+    <div class="message" id="message" role="alert" hidden></div>
+
+    <div id="zone-resultat" hidden>
+      <label for="sortie" id="libelle-sortie">Résultat</label>
+      <textarea id="sortie" readonly spellcheck="false"></textarea>
+      <div class="actions">
+        <button type="button" class="btn" id="copier">Copier</button>
+        <button type="button" class="btn" id="telecharger">Télécharger</button>
+        <button type="button" class="btn" id="inverser">Le décoder ↺</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="explication">
+    <h2>Comment ça marche</h2>
+    <p>Chaque caractère du texte est décalé selon une lettre de la clé (le décalage est mesuré par rapport à la lettre « a »), et la clé est réutilisée en boucle. Les résultats restent dans les caractères imprimables (codes 32 à 126) et les retours à la ligne sont conservés. Le décodage applique le décalage inverse.</p>
+    <p>Le programme d'origine est une application console en C++. Pour cette page, la même logique a été compilée en WebAssembly avec Emscripten.</p>
+    <p><a href="https://github.com/Nick-Suebang/encodeur-et-decodeur-de-fichier">Voir le code source sur GitHub</a></p>
+  </section>
+</main>
+
+<script src="encodeur.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const entree = $("entree"), cle = $("cle"), lancer = $("lancer"), sortie = $("sortie");
+  const message = $("message"), zoneResultat = $("zone-resultat"), aideCle = $("aide-cle");
+  let module = null;
+  let mode = "encoder";
+  let nomFichier = null;
+
+  const textes = {
+    encoder: { entree: "Texte à encoder", bouton: "Encoder", sortie: "Texte encodé", inverser: "Le décoder ↺" },
+    decoder: { entree: "Texte à décoder", bouton: "Décoder", sortie: "Texte décodé", inverser: "Le réencoder ↺" },
+  };
+
+  function changerMode(nouveau) {
+    mode = nouveau;
+    document.querySelectorAll(".modes button").forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.mode === mode)));
+    $("libelle-entree").textContent = textes[mode].entree;
+    lancer.textContent = textes[mode].bouton;
+    $("libelle-sortie").textContent = textes[mode].sortie;
+    $("inverser").textContent = textes[mode].inverser;
+    masquerResultat();
+  }
+
+  function masquerResultat() {
+    zoneResultat.hidden = true;
+    message.hidden = true;
+  }
+
+  function verifierCle() {
+    if (!module) return false;
+    const erreur = module.verifierCle(cle.value);
+    aideCle.textContent = erreur || "Clé valide.";
+    aideCle.classList.toggle("erreur", Boolean(erreur));
+    return !erreur;
+  }
+
+  function executer() {
+    masquerResultat();
+    if (!verifierCle()) { cle.focus(); return; }
+    // Appel des fonctions C++ encoder() / decoder()
+    const resultat = module[mode](entree.value, cle.value);
+    if (!resultat.ok) {
+      message.textContent = resultat.erreur;
+      message.hidden = false;
+      return;
+    }
+    sortie.value = resultat.texte;
+    zoneResultat.hidden = false;
+  }
+
+  function chargerFichier(fichier) {
+    if (!fichier) return;
+    const lecteur = new FileReader();
+    lecteur.onload = () => {
+      entree.value = lecteur.result;
+      nomFichier = fichier.name;
+      $("nom-fichier").textContent = "Fichier chargé : " + fichier.name;
+      masquerResultat();
+    };
+    lecteur.readAsText(fichier);
+  }
+
+  function nomTelechargement() {
+    const base = nomFichier ? nomFichier.replace(/\.[^.]+$/, "") : "message";
+    return base + (mode === "encoder" ? "_encode.txt" : "_decode.txt");
+  }
+
+  document.querySelectorAll(".modes button").forEach((b) =>
+    b.addEventListener("click", () => changerMode(b.dataset.mode)));
+  lancer.addEventListener("click", executer);
+  cle.addEventListener("input", () => { verifierCle(); masquerResultat(); });
+  cle.addEventListener("keydown", (e) => { if (e.key === "Enter") executer(); });
+  entree.addEventListener("input", masquerResultat);
+
+  $("choisir-fichier").addEventListener("click", () => $("fichier").click());
+  $("fichier").addEventListener("change", (e) => chargerFichier(e.target.files[0]));
+  const depot = $("depot");
+  depot.addEventListener("dragover", (e) => { e.preventDefault(); depot.classList.add("survol"); });
+  depot.addEventListener("dragleave", () => depot.classList.remove("survol"));
+  depot.addEventListener("drop", (e) => {
+    e.preventDefault();
+    depot.classList.remove("survol");
+    chargerFichier(e.dataTransfer.files[0]);
+  });
+
+  $("copier").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(sortie.value);
+      $("copier").textContent = "Copié ✓";
+    } catch {
+      sortie.select();
+      $("copier").textContent = "Sélectionné (Ctrl+C)";
+    }
+    setTimeout(() => ($("copier").textContent = "Copier"), 1500);
+  });
+
+  $("telecharger").addEventListener("click", () => {
+    const url = URL.createObjectURL(new Blob([sortie.value], { type: "text/plain" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: nomTelechargement() });
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  $("inverser").addEventListener("click", () => {
+    const texte = sortie.value;
+    changerMode(mode === "encoder" ? "decoder" : "encoder");
+    entree.value = texte;
+    executer();
+  });
+
+  // Chargement du module WebAssembly compilé depuis encodeur_web.cpp
+  creerEncodeur().then((m) => {
+    module = m;
+    $("etat").textContent = "C++ / WebAssembly prêt";
+    $("etat").classList.add("pret");
+    lancer.disabled = false;
+    verifierCle();
+  }).catch((err) => {
+    $("etat").textContent = "Impossible de charger le module C++";
+    message.textContent = "Erreur de chargement : " + err;
+    message.hidden = false;
+  });
+})();
+</script>
+</body>
+</html>
