@@ -43,6 +43,9 @@
     main { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; }
     h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
     .intro { color: var(--muted); margin: 0 0 28px; }
+    .credit { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: .85rem; }
+    .credit p { margin: 0 0 6px; }
+    .credit a { color: var(--accent); }
     .badge {
       display: inline-block; font-size: .78rem; font-weight: 600;
       padding: 2px 10px; border-radius: 999px; margin-bottom: 14px;
@@ -141,6 +144,10 @@
     <p>Le programme d'origine est une application console en C++. Pour cette page, la même logique a été compilée en WebAssembly avec Emscripten.</p>
     <p><a href="https://github.com/Nick-Suebang/encodeur-et-decodeur-de-fichier">Voir le code source sur GitHub</a></p>
   </section>
+  <footer class="credit">
+    <p>Projet de <a href="https://nicksuebang.com">Nick Suebang</a> · <a href="mailto:contact@nicksuebang.com">contact@nicksuebang.com</a> · <a href="https://github.com/Nick-Suebang/encodeur-et-decodeur-de-fichier">Code source</a> · <a href="https://www.linkedin.com/in/nick-hariel-teponno-suebang-6a8875292/">LinkedIn</a></p>
+    <p>Aucune donnée personnelle n’est recueillie : le programme s’exécute entièrement dans votre navigateur, sans témoins (cookies). Le site est hébergé par GitHub Pages, qui peut conserver des journaux techniques (adresse IP).</p>
+  </footer>
 </main>
 
 <script src="encodeur.js"></script>
