@@ -237,3 +237,12 @@ Ce script compile les tests et la console avec `-Wall -Wextra -Wpedantic -Werror
 ---
 
 Réalisé par [Nick Suebang](https://github.com/Nick-Suebang).
+
+## Auteur et contact
+
+**Nick Suebang** (Nick Hariel Teponno Suebang), technicien en informatique et développeur web et mobile à Rimouski (QC).
+
+- Portfolio : [nicksuebang.com](https://nicksuebang.com)
+- Courriel : [contact@nicksuebang.com](mailto:contact@nicksuebang.com)
+- GitHub : [@Nick-Suebang](https://github.com/Nick-Suebang)
+- LinkedIn : [Nick Hariel Teponno Suebang](https://www.linkedin.com/in/nick-hariel-teponno-suebang-6a8875292/)
